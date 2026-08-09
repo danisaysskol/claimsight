@@ -7,8 +7,8 @@ it). They skip cleanly otherwise.
 
 from __future__ import annotations
 
-import sqlalchemy
 import pytest
+import sqlalchemy
 
 
 def _has_table(engine, schema: str, table: str) -> bool:
