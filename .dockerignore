@@ -1,0 +1,13 @@
+.venv/
+.git/
+data/raw/
+data/exports/*
+!data/exports/.gitkeep
+**/__pycache__/
+**/*.pyc
+.pytest_cache/
+.ruff_cache/
+dbt/claimsight_dw/target/
+dbt/claimsight_dw/logs/
+logs/
+*.log

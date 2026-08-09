@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: claimsight_pg
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-claimsight}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-claimsight}
+      POSTGRES_DB: ${POSTGRES_DB:-claimsight}
+    ports:
+      # Host port 5433 -> container 5432 (5432 is often already in use on Windows)
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - claimsight_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-claimsight} -d ${POSTGRES_DB:-claimsight}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Containerised pipeline/test runner. Runs the Python 3.12 + dbt stack on the
+  # same network as postgres (reachable as host "postgres", port 5432).
+  app:
+    build: .
+    container_name: claimsight_app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-claimsight}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-claimsight}
+      POSTGRES_DB: ${POSTGRES_DB:-claimsight}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      RAW_SCHEMA: raw
+      REPORTING_SCHEMA: reporting
+      CLAIMSIGHT_SEED: "42"
+      CLAIMSIGHT_N_CLAIM_LINES: "${CLAIMSIGHT_N_CLAIM_LINES:-60000}"
+      DQ_FAIL_ON_CRITICAL: "true"
+      PYTHONPATH: /app/src
+      DBT_PROFILES_DIR: /app/dbt/claimsight_dw
+    volumes:
+      - .:/app
+    working_dir: /app
+    # Overridden per invocation via `docker compose run --rm app <cmd>`.
+    command: ["python", "-m", "claimsight.pipeline"]
+
+volumes:
+  claimsight_pgdata:
+    name: claimsight_pgdata

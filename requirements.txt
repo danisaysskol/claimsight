@@ -1,0 +1,28 @@
+# ClaimSight pinned dependencies (resolved & verified on Python 3.12, Docker + CI).
+# Streamlit requires pandas<3, which pins the stack to the pandas 2.x line.
+# Full transitive lock: requirements.lock.txt
+pandas==2.3.3
+numpy==2.2.6
+SQLAlchemy==2.0.51
+psycopg2-binary==2.9.12
+Faker==40.36.0
+pydantic==2.13.4
+pydantic-settings==2.15.0
+python-dotenv==1.2.2
+rich==15.0.0
+
+# Dashboard:
+streamlit==1.61.1
+plotly==6.9.0
+
+# Excel export:
+openpyxl==3.1.5
+
+# Transformation layer:
+dbt-core==1.12.0
+dbt-postgres==1.11.0
+
+# Test + lint:
+pytest==8.4.2
+pytest-cov==7.1.0
+ruff==0.16.2

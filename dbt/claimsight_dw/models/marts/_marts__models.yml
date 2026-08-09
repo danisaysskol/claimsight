@@ -1,0 +1,155 @@
+version: 2
+
+models:
+  - name: dim_date
+    description: "Full daily calendar with Pakistani fiscal year (Jul–Jun)."
+    columns:
+      - name: date_key
+        description: "Integer YYYYMMDD surrogate key."
+        tests: [unique, not_null]
+      - name: date_day
+        tests: [not_null]
+      - name: fiscal_year
+        tests: [not_null]
+
+  - name: dim_member
+    description: "Member dimension with Type-2 SCD validity columns."
+    columns:
+      - name: member_sk
+        description: "Surrogate key (member_id + valid_from)."
+        tests: [unique, not_null]
+      - name: member_id
+        tests: [not_null]
+      - name: gender
+        tests:
+          - accepted_values: {values: ['Male', 'Female']}
+      - name: relationship
+        tests:
+          - accepted_values: {values: ['Self', 'Spouse', 'Child']}
+      - name: is_current
+        tests: [not_null]
+      - name: policy_id
+        tests:
+          - relationships: {to: ref('dim_policy'), field: policy_id}
+
+  - name: dim_provider
+    description: "Provider dimension, SCD2 on network_status."
+    columns:
+      - name: provider_sk
+        tests: [unique, not_null]
+      - name: provider_id
+        tests: [not_null]
+      - name: network_status
+        tests:
+          - accepted_values: {values: ['In-Network', 'Out-of-Network']}
+      - name: provider_type
+        tests:
+          - accepted_values: {values: ['Hospital', 'Clinic', 'Diagnostic', 'Pharmacy']}
+
+  - name: dim_employer_group
+    columns:
+      - name: employer_group_sk
+        tests: [unique, not_null]
+      - name: group_id
+        tests: [unique, not_null]
+
+  - name: dim_policy
+    columns:
+      - name: policy_sk
+        tests: [unique, not_null]
+      - name: policy_id
+        tests: [unique, not_null]
+      - name: plan_tier
+        tests:
+          - accepted_values: {values: ['Bronze', 'Silver', 'Gold', 'Platinum']}
+
+  - name: dim_diagnosis
+    columns:
+      - name: diagnosis_sk
+        tests: [unique, not_null]
+      - name: diagnosis_code
+        tests: [unique, not_null]
+
+  - name: dim_procedure
+    columns:
+      - name: procedure_sk
+        tests: [unique, not_null]
+      - name: procedure_code
+        tests: [unique, not_null]
+
+  - name: dim_claim_status
+    columns:
+      - name: claim_status_sk
+        tests: [unique, not_null]
+      - name: status
+        tests:
+          - unique
+          - accepted_values: {values: ['Paid', 'Partially Paid', 'Denied', 'Pending', 'In Review']}
+
+  - name: dim_claim_type
+    columns:
+      - name: claim_type_sk
+        tests: [unique, not_null]
+      - name: claim_type
+        tests:
+          - unique
+          - accepted_values:
+              values: ['Inpatient', 'Outpatient', 'Daycare', 'Pharmacy', 'Diagnostic', 'Maternity', 'Emergency']
+
+  - name: fct_claim_header
+    description: "Claim-grain fact with turnaround-time measures."
+    columns:
+      - name: claim_sk
+        tests: [unique, not_null]
+      - name: claim_id
+        tests: [unique, not_null]
+      - name: member_sk
+        tests:
+          - not_null
+          - relationships: {to: ref('dim_member'), field: member_sk}
+      - name: provider_sk
+        tests:
+          - not_null
+          - relationships: {to: ref('dim_provider'), field: provider_sk}
+      - name: policy_sk
+        tests:
+          - relationships: {to: ref('dim_policy'), field: policy_sk}
+      - name: status
+        tests:
+          - accepted_values: {values: ['Paid', 'Partially Paid', 'Denied', 'Pending', 'In Review']}
+      - name: claim_type
+        tests:
+          - accepted_values:
+              values: ['Inpatient', 'Outpatient', 'Daycare', 'Pharmacy', 'Diagnostic', 'Maternity', 'Emergency']
+      - name: adjudication_mode
+        tests:
+          - not_null
+          - accepted_values: {values: ['Auto', 'Manual']}
+
+  - name: fct_claim_line
+    description: "Atomic line-grain fact."
+    columns:
+      - name: claim_line_sk
+        tests: [unique, not_null]
+      - name: claim_line_id
+        tests: [unique, not_null]
+      - name: claim_id
+        tests:
+          - not_null
+          - relationships: {to: ref('fct_claim_header'), field: claim_id}
+      - name: procedure_sk
+        tests:
+          - relationships: {to: ref('dim_procedure'), field: procedure_sk}
+      - name: diagnosis_sk
+        tests:
+          - relationships: {to: ref('dim_diagnosis'), field: diagnosis_sk}
+
+  - name: fct_monthly_member_summary
+    description: "Member x month aggregate feeding PMPM metrics."
+    columns:
+      - name: member_month_sk
+        tests: [unique, not_null]
+      - name: member_sk
+        tests:
+          - not_null
+          - relationships: {to: ref('dim_member'), field: member_sk}

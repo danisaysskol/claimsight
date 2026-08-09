@@ -1,0 +1,15 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: raw
+    description: "Raw CSVs loaded verbatim (dirt preserved) by the Python ingestion step."
+    tables:
+      - name: employer_groups
+      - name: policies
+      - name: providers
+      - name: members
+      - name: diagnoses
+      - name: procedures
+      - name: claims_header
+      - name: claims_lines

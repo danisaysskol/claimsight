@@ -1,0 +1,43 @@
+version: 2
+
+models:
+  - name: stg_employer_groups
+    description: "Typed employer groups with canonical city."
+    columns:
+      - name: group_id
+        tests: [unique, not_null]
+  - name: stg_policies
+    description: "Typed policies with parsed booleans."
+    columns:
+      - name: policy_id
+        tests: [unique, not_null]
+  - name: stg_providers
+    description: "Typed providers with canonical city."
+    columns:
+      - name: provider_id
+        tests: [unique, not_null]
+  - name: stg_members
+    description: "Typed members; mixed-format DOB/enrolment dates parsed; age derived. Contains injected defect rows (impossible ages) by design."
+    columns:
+      - name: member_id
+        tests: [unique, not_null]
+  - name: stg_diagnoses
+    description: "ICD-10-style diagnosis code book."
+    columns:
+      - name: diagnosis_code
+        tests: [unique, not_null]
+  - name: stg_procedures
+    description: "CPT-style procedure code book with typical cost."
+    columns:
+      - name: procedure_code
+        tests: [unique, not_null]
+  - name: stg_claims_header
+    description: "Typed claim headers; dirt preserved (duplicates, orphans, amount/date violations) for the intermediate layer to clean."
+    columns:
+      - name: claim_id
+        tests: [not_null]
+  - name: stg_claims_lines
+    description: "Typed claim lines."
+    columns:
+      - name: claim_line_id
+        tests: [not_null]

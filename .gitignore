@@ -1,0 +1,38 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Environment / secrets
+.env
+*.env
+!.env.example
+
+# Data (synthetic, regenerable) — never commit
+data/raw/
+data/exports/*
+!data/exports/.gitkeep
+
+# dbt
+dbt/claimsight_dw/target/
+dbt/claimsight_dw/dbt_packages/
+dbt/claimsight_dw/logs/
+dbt/claimsight_dw/.user.yml
+logs/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+
+# Streamlit
+.streamlit/secrets.toml

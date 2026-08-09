@@ -1,0 +1,34 @@
+{
+  "name": "ClaimSight Colourblind-Safe",
+  "dataColors": [
+    "#0072B2",
+    "#E69F00",
+    "#009E73",
+    "#CC79A7",
+    "#56B4E9",
+    "#D55E00",
+    "#F0E442",
+    "#000000"
+  ],
+  "good": "#009E73",
+  "neutral": "#E69F00",
+  "bad": "#D55E00",
+  "maximum": "#0072B2",
+  "center": "#F0E442",
+  "minimum": "#D55E00",
+  "null": "#999999",
+  "background": "#FFFFFF",
+  "foreground": "#111111",
+  "tableAccent": "#0072B2",
+  "visualStyles": {
+    "*": {
+      "*": {
+        "title": [{ "fontColor": { "solid": { "color": "#111111" } }, "fontSize": 12 }],
+        "labels": [{ "color": { "solid": { "color": "#111111" } } }],
+        "categoryAxis": [{ "labelColor": { "solid": { "color": "#111111" } } }],
+        "valueAxis": [{ "labelColor": { "solid": { "color": "#111111" } } }],
+        "legend": [{ "labelColor": { "solid": { "color": "#111111" } } }]
+      }
+    }
+  }
+}

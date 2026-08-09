@@ -1,0 +1,6 @@
+# Normalise line endings: LF in the repo for everything (the Dockerfile,
+# Makefile, shell and SQL all run on Linux in CI), CRLF only for PowerShell.
+* text=auto eol=lf
+*.ps1 text eol=crlf
+*.png binary
+*.xlsx binary

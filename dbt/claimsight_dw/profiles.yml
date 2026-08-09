@@ -1,0 +1,16 @@
+# dbt connection profile. Reads the same env vars as the Python app so there is
+# a single source of connection truth. Point dbt at this file with
+# DBT_PROFILES_DIR (the pipeline runner does this automatically).
+claimsight_dw:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('POSTGRES_HOST', 'localhost') }}"
+      port: "{{ env_var('POSTGRES_PORT', '5433') | int }}"
+      user: "{{ env_var('POSTGRES_USER', 'claimsight') }}"
+      password: "{{ env_var('POSTGRES_PASSWORD', 'claimsight') }}"
+      dbname: "{{ env_var('POSTGRES_DB', 'claimsight') }}"
+      schema: public
+      threads: 4
+      sslmode: prefer

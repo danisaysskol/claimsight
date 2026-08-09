@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: claimsight
+          POSTGRES_PASSWORD: claimsight
+          POSTGRES_DB: claimsight
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U claimsight"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 15
+
+    env:
+      POSTGRES_USER: claimsight
+      POSTGRES_PASSWORD: claimsight
+      POSTGRES_DB: claimsight
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+      RAW_SCHEMA: raw
+      REPORTING_SCHEMA: reporting
+      CLAIMSIGHT_SEED: "42"
+      CLAIMSIGHT_N_CLAIM_LINES: "8000"
+      DQ_FAIL_ON_CRITICAL: "true"
+      DBT_PROFILES_DIR: ${{ github.workspace }}/dbt/claimsight_dw
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Lint (ruff)
+        run: ruff check src tests dashboard
+
+      - name: Generate synthetic data
+        run: python -m claimsight.generate.generate
+        env:
+          PYTHONPATH: src
+
+      - name: Ingest into raw schema
+        run: python -m claimsight.ingest.ingest
+        env:
+          PYTHONPATH: src
+
+      - name: Data-quality gate
+        run: python -m claimsight.quality.run_quality
+        env:
+          PYTHONPATH: src
+
+      - name: dbt build (models + tests)
+        working-directory: dbt/claimsight_dw
+        run: dbt build
+
+      - name: Build reporting views
+        run: python -m claimsight.reporting.build_reporting
+        env:
+          PYTHONPATH: src
+
+      - name: Build Excel report
+        run: python -m claimsight.export.excel_report
+        env:
+          PYTHONPATH: src
+
+      - name: Tests + coverage
+        run: pytest --cov=src/claimsight --cov-report=term-missing --cov-fail-under=70
+        env:
+          PYTHONPATH: src
+
+      - name: dbt docs generate
+        working-directory: dbt/claimsight_dw
+        run: dbt docs generate
