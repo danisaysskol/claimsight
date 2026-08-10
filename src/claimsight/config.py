@@ -6,6 +6,7 @@ rest of the codebase can rely on correct types instead of re-parsing os.environ.
 
 from __future__ import annotations
 
+import os
 from functools import lru_cache
 from pathlib import Path
 
@@ -16,8 +17,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # src/claimsight/config.py -> src/claimsight -> src -> <root>
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = PROJECT_ROOT / "data"
-RAW_DATA_DIR = DATA_DIR / "raw"
-EXPORTS_DIR = DATA_DIR / "exports"
+# Output dirs are env-overridable so containerised runners (e.g. the Airflow
+# image, which runs as a non-root user that can't write git-tracked host dirs)
+# can point them at a writable location.
+RAW_DATA_DIR = Path(os.environ.get("CLAIMSIGHT_RAW_DIR") or (DATA_DIR / "raw"))
+EXPORTS_DIR = Path(os.environ.get("CLAIMSIGHT_EXPORTS_DIR") or (DATA_DIR / "exports"))
 
 
 class Settings(BaseSettings):

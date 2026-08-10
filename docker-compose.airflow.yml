@@ -20,8 +20,10 @@ services:
     container_name: claimsight_airflow
     environment:
       # --- Airflow (SQLite + Sequential executor: self-contained, no extra DB) ---
+      # Metadata DB lives in AIRFLOW_HOME (owned by the airflow user), not a
+      # root-owned mounted volume, so SQLite is writable.
       AIRFLOW__CORE__EXECUTOR: SequentialExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/meta/airflow.db
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
       AIRFLOW__CORE__PARALLELISM: "1"
@@ -39,19 +41,24 @@ services:
       CS_PYTHON: /home/airflow/cs-venv/bin/python
       CS_DBT: /home/airflow/cs-venv/bin/dbt
       CS_PROJECT: /opt/airflow/project
+      # Write pipeline outputs to container-owned paths (the airflow user can't
+      # write the git-tracked host data/ dir, and this avoids the bind-mount).
+      CLAIMSIGHT_RAW_DIR: /opt/airflow/cs-data/raw
+      CLAIMSIGHT_EXPORTS_DIR: /opt/airflow/cs-data/exports
       DBT_PROFILES_DIR: /opt/airflow/project/dbt/claimsight_dw
+      # target/ and logs/ go to writable container paths (the mounted project
+      # dir isn't writable by the non-root airflow user).
       DBT_TARGET_PATH: /tmp/dbt_target
+      DBT_LOG_PATH: /tmp/dbt_logs
     volumes:
       - .:/opt/airflow/project
       - ./airflow/dags:/opt/airflow/dags
-      - airflow_meta:/opt/airflow/meta
     ports:
       - "8080:8080"
     networks:
       - core
     command: >-
-      bash -c "mkdir -p /opt/airflow/meta &&
-               airflow db migrate &&
+      bash -c "airflow db migrate &&
                airflow dags reserialize &&
                airflow standalone"
 
@@ -59,7 +66,3 @@ networks:
   core:
     external: true
     name: claimsight_default
-
-volumes:
-  airflow_meta:
-    name: claimsight_airflow_meta

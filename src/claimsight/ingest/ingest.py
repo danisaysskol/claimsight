@@ -14,7 +14,7 @@ import pandas as pd
 from sqlalchemy import Engine, text
 
 from claimsight.config import RAW_DATA_DIR, Settings, get_settings
-from claimsight.db import ensure_schemas, get_engine
+from claimsight.db import get_engine
 
 # Order matters only for readability; there are no FKs in the raw schema.
 RAW_TABLES: list[str] = [
@@ -62,7 +62,15 @@ def ingest_all(settings: Settings | None = None, raw_dir: Path | None = None) ->
     settings = settings or get_settings()
     raw_dir = raw_dir or RAW_DATA_DIR
     engine = get_engine(settings)
-    ensure_schemas(engine, [settings.raw_schema])
+
+    # Rebuild the landing zone cleanly. Dropping the schema CASCADE removes any
+    # downstream objects that depend on the raw tables from a previous run (dbt
+    # staging views, reporting.v_duplicate_candidates) — otherwise pandas'
+    # to_sql(if_exists="replace") DROP TABLE fails with DependentObjectsStillExist.
+    # dbt build and the reporting step recreate those objects afterwards.
+    with engine.begin() as conn:
+        conn.execute(text(f'DROP SCHEMA IF EXISTS "{settings.raw_schema}" CASCADE'))
+        conn.execute(text(f'CREATE SCHEMA "{settings.raw_schema}"'))
 
     counts: dict[str, int] = {}
     for name in RAW_TABLES:
