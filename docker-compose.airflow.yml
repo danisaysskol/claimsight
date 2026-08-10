@@ -1,0 +1,65 @@
+# Optional Phase 10: Apache Airflow orchestration for the ClaimSight pipeline.
+# Isolated from the core stack — the main project runs fine without this file.
+# It attaches to the core compose network so the DAG can reach Postgres.
+#
+# Usage:
+#   docker compose up -d                       # start Postgres (core)
+#   docker compose -f docker-compose.airflow.yml build airflow
+#   docker compose -f docker-compose.airflow.yml run --rm airflow \
+#       bash -c "airflow db migrate && airflow dags test claimsight_pipeline"
+#
+# Or a full UI:
+#   docker compose -f docker-compose.airflow.yml up   # then open http://localhost:8080
+
+services:
+  airflow:
+    build:
+      context: .
+      dockerfile: airflow/Dockerfile
+    image: claimsight-airflow
+    container_name: claimsight_airflow
+    environment:
+      # --- Airflow (SQLite + Sequential executor: self-contained, no extra DB) ---
+      AIRFLOW__CORE__EXECUTOR: SequentialExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/meta/airflow.db
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
+      AIRFLOW__CORE__PARALLELISM: "1"
+      # --- ClaimSight pipeline (points at the core Postgres over the network) ---
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: claimsight
+      POSTGRES_PASSWORD: claimsight
+      POSTGRES_DB: claimsight
+      RAW_SCHEMA: raw
+      REPORTING_SCHEMA: reporting
+      CLAIMSIGHT_SEED: "42"
+      CLAIMSIGHT_N_CLAIM_LINES: "8000"
+      DQ_FAIL_ON_CRITICAL: "true"
+      CS_PYTHON: /home/airflow/cs-venv/bin/python
+      CS_DBT: /home/airflow/cs-venv/bin/dbt
+      CS_PROJECT: /opt/airflow/project
+      DBT_PROFILES_DIR: /opt/airflow/project/dbt/claimsight_dw
+      DBT_TARGET_PATH: /tmp/dbt_target
+    volumes:
+      - .:/opt/airflow/project
+      - ./airflow/dags:/opt/airflow/dags
+      - airflow_meta:/opt/airflow/meta
+    ports:
+      - "8080:8080"
+    networks:
+      - core
+    command: >-
+      bash -c "mkdir -p /opt/airflow/meta &&
+               airflow db migrate &&
+               airflow dags reserialize &&
+               airflow standalone"
+
+networks:
+  core:
+    external: true
+    name: claimsight_default
+
+volumes:
+  airflow_meta:
+    name: claimsight_airflow_meta

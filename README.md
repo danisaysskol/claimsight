@@ -81,11 +81,15 @@ erDiagram
 
 ## Screenshots
 
-_Placeholders — export from Streamlit / Power BI into `docs/screenshots/`._
+Streamlit dashboard (captured headless via `scripts/screenshot_dashboard.py`):
 
-| Executive | Operations | Data Quality |
-|-----------|------------|--------------|
-| ![exec](docs/screenshots/executive.png) | ![ops](docs/screenshots/operations.png) | ![dq](docs/screenshots/data_quality.png) |
+| Executive Summary | Claims Operations |
+|-------------------|-------------------|
+| ![exec](docs/screenshots/executive.png) | ![ops](docs/screenshots/operations.png) |
+
+| Financial Performance | Provider Network | Data Quality |
+|-----------------------|------------------|--------------|
+| ![fin](docs/screenshots/financial.png) | ![net](docs/screenshots/network.png) | ![dq](docs/screenshots/data_quality.png) |
 
 ## Quickstart (Windows 11 / PowerShell)
 
@@ -181,6 +185,27 @@ Amounts are plausible in **PKR**, cities are Pakistani, and the data carries
 genuine signal (winter respiratory seasonality, out-of-network cost premium,
 ~5 anomalous providers, heavy-utiliser long tail, tier-linked approval rates) so
 the dashboards show something worth reading. It remains entirely synthetic.
+
+## Orchestration (optional — Apache Airflow)
+
+An isolated Airflow setup runs the same pipeline as a DAG
+(`generate → ingest → quality gate → dbt build → reporting → excel`). It is kept
+in a separate compose file so the core project runs without it. The pipeline
+steps execute in a dedicated virtualenv inside the Airflow image, so Airflow's
+own dependencies are untouched.
+
+```powershell
+docker compose up -d                                            # core Postgres
+docker compose -f docker-compose.airflow.yml build airflow
+# Run the DAG end to end without a scheduler:
+docker compose -f docker-compose.airflow.yml run --rm airflow `
+  bash -c "airflow db migrate && airflow dags test claimsight_pipeline"
+# ...or bring up the full UI at http://localhost:8080:
+docker compose -f docker-compose.airflow.yml up
+```
+
+The `quality_gate` task fails (non-zero exit) on any critical data-quality
+failure, halting the DAG — exactly like the CLI pipeline.
 
 ## License
 

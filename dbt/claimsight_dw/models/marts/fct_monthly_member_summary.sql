@@ -1,4 +1,8 @@
 -- Member x month grain: feeds PMPM and per-member utilisation metrics.
+{{ config(post_hook=[
+    "create index if not exists ix_fmms_member_sk on {{ this }} (member_sk)",
+    "create index if not exists ix_fmms_month_key on {{ this }} (month_key)"
+]) }}
 with claims as (
     select
         c.member_id,

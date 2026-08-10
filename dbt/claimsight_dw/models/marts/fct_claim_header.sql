@@ -1,5 +1,13 @@
 -- Claim-grain fact: one row per adjudicated claim, with turnaround-time
 -- measures and surrogate keys to the conformed dimensions.
+-- Indexes on the dimension foreign keys + submission date key speed the star
+-- joins that every reporting view and BI query performs.
+{{ config(post_hook=[
+    "create index if not exists ix_fch_member_sk on {{ this }} (member_sk)",
+    "create index if not exists ix_fch_provider_sk on {{ this }} (provider_sk)",
+    "create index if not exists ix_fch_employer_sk on {{ this }} (employer_group_sk)",
+    "create index if not exists ix_fch_submission_dk on {{ this }} (submission_date_key)"
+]) }}
 with claims as (
     select * from {{ ref('int_claims_cleaned') }}
 ),

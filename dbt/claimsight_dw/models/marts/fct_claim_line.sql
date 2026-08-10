@@ -1,4 +1,9 @@
 -- Line-grain atomic fact: one row per line of one claim.
+{{ config(post_hook=[
+    "create index if not exists ix_fcl_claim_id on {{ this }} (claim_id)",
+    "create index if not exists ix_fcl_procedure_sk on {{ this }} (procedure_sk)",
+    "create index if not exists ix_fcl_diagnosis_sk on {{ this }} (diagnosis_sk)"
+]) }}
 with lines as (
     select * from {{ ref('int_claim_lines_cleaned') }}
 ),
